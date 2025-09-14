@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Inventory Agent - Live Dashboard</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        
+        .status-bar {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .profit { color: #27ae60; }
+        .service-level { color: #3498db; }
+        .orders { color: #e67e22; }
+        .stock { color: #9b59b6; }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 2rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 0.5rem;
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🤖 Intelligent Inventory Agent</h1>
+        <p>Real-time Production Dashboard - Live Agent Monitoring</p>
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connected to Live Dashboard</span>
+        </div>
+        
+        <div>
+            <button class="btn" onclick="startMonitoring()">Start Monitoring</button>
+            <button class="btn" onclick="resetDashboard()">Reset Dashboard</button>
+        </div>
+        
+        <div id="lastUpdate">
+            Last Update: --
+        </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value profit" id="profitValue">$0</div>
+            <div class="metric-label">Total Profit</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value service-level" id="serviceLevelValue">100%</div>
+            <div class="metric-label">Service Level</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value orders" id="ordersValue">0</div>
+            <div class="metric-label">Orders Placed</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value stock" id="stockValue">3000</div>
+            <div class="metric-label">Current Stock</div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Inventory Management</h3>
+            <div id="inventoryChart" class="loading">Waiting for data...</div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Performance Metrics</h3>
+            <div id="performanceChart" class="loading">Waiting for data...</div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Agent Decisions</h3>
+            <div id="decisionsLog" class="loading">Waiting for agent decisions...</div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // DOM Elements
+        const statusText = document.getElementById('statusText');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const profitValue = document.getElementById('profitValue');
+        const serviceLevelValue = document.getElementById('serviceLevelValue');
+        const ordersValue = document.getElementById('ordersValue');
+        const stockValue = document.getElementById('stockValue');
+        
+        // Socket Events
+        socket.on('connect', function() {
+            console.log('Connected to dashboard');
+            statusText.textContent = 'Connected to Live Dashboard';
+            socket.emit('start_monitoring');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Disconnected from dashboard');
+            statusText.textContent = 'Disconnected from Dashboard';
+        });
+        
+        socket.on('dashboard_update', function(data) {
+            console.log('Dashboard update received:', data);
+            updateDashboard(data);
+        });
+        
+        // Update Functions
+        function updateDashboard(data) {
+            // Update timestamp
+            lastUpdate.textContent = `Last Update: ${new Date().toLocaleTimeString()}`;
+            
+            // Update metrics if available
+            if (data.metrics && data.metrics.service_metrics) {
+                const metrics = data.metrics.service_metrics;
+                const profit = metrics.total_revenue - metrics.total_costs;
+                
+                profitValue.textContent = `$${profit.toLocaleString()}`;
+                serviceLevelValue.textContent = `${metrics.service_level.toFixed(1)}%`;
+                ordersValue.textContent = metrics.orders_placed || 0;
+            }
+            
+            // Update charts if available
+            if (data.charts) {
+                updateCharts(data.charts);
+            }
+        }
+        
+        function updateCharts(charts) {
+            // Update inventory chart
+            if (charts.inventory) {
+                Plotly.newPlot('inventoryChart', charts.inventory.data, charts.inventory.layout, {responsive: true});
+            }
+            
+            // Update performance chart
+            if (charts.performance) {
+                Plotly.newPlot('performanceChart', charts.performance.data, charts.performance.layout, {responsive: true});
+            }
+        }
+        
+        // Control Functions
+        function startMonitoring() {
+            socket.emit('start_monitoring');
+            console.log('Started monitoring');
+        }
+        
+        function resetDashboard() {
+            if (confirm('Reset dashboard data?')) {
+                fetch('/api/reset-dashboard')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Dashboard reset:', data);
+                        location.reload();
+                    });
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard initialized');
+            
+            // Show loading state
+            const loadingElements = document.querySelectorAll('.loading');
+            loadingElements.forEach(el => {
+                el.textContent = 'Waiting for agent data...';
+            });
+        });
+    </script>
+</body>
+</html>
