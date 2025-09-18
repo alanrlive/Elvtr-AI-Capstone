@@ -4,5 +4,7 @@ Assignment #2 - Description: Develop a mini MLOps pipeline for a sample dataset,
 
 Assignment #3 - Description: Use a real dataset to perform data cleansing and feature engineering using Pandas or PySpark.
 
+Assignment #4 - Description: Choose a regression problem and compare the performance of Linear Regression, XGBoost, and Decision Trees. Document your findings.
+
 Assignment #5 - Description: For a given dataset, implement and compare classification (e.g., Logistic Regression) and clustering techniques (e.g., K-Means) and provide a summary of when to use each approach.
 
